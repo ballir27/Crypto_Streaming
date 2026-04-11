@@ -19,3 +19,4 @@ data/
 *.xlsx
 *.parquet
 *.db
+*.txt

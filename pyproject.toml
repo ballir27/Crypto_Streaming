@@ -5,6 +5,21 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "cryptography>=46.0.7",
+    "loguru>=0.7.3",
+    "pyjwt>=2.12.1",
+    "python-dotenv>=1.2.2",
     "rabbitmq>=0.2.0",
-    "websockets>=16.0",
+    "websocket-client>=1.9.0",
 ]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.15.10",
+]
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "N", "UP", "B", "S", "SIM", "RUF", "T20"]
