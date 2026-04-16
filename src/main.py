@@ -6,35 +6,41 @@ import time
 from pathlib import Path
 
 import jwt
+import pika
 import websocket
 from dotenv import dotenv_values
 from loguru import logger
 
-# Derived from your Coinbase CDP API Key
-# SIGNING_KEY: the signing key provided as a part of your API key. Also called the "SECRET KEY"
-# API_KEY: the api key provided as a part of your API key. also called the "API KEY NAME"
+# --- Configuration & Auth Setup ---
 PROJECT_ROOT = Path(__file__).resolve().parent
 config = dotenv_values(os.path.join(PROJECT_ROOT, "../.env"))
 
 COINBASE_API_KEY = config.get('COINBASE_API_KEY')
 COINBASE_SIGNING_KEY = config.get("COINBASE_SIGNING_KEY").encode().decode('unicode_escape')
-
 ALGORITHM = "ES256"
 
 if not COINBASE_SIGNING_KEY or not COINBASE_API_KEY:
     raise ValueError("Missing mandatory environment variable(s)")
 
+# --- RabbitMQ Setup ---
+def get_rabbitmq_channel():
+    connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+    channel = connection.channel()
+    channel.queue_declare(queue='coinbase_stream', durable=True)
+    logger.info("Successfully connected to RabbitMQ and declared 'coinbase_stream'")
+    return connection, channel
+
+# Initialize global connection and channel
+# Note: For massive scale, you'd handle connection drops more robustly
+rmq_conn, rmq_channel = get_rabbitmq_channel()
+
 CHANNEL_NAMES = {
     "level2": "level2",
-    "user": "user",
     "tickers": "ticker",
-    "ticker_batch": "ticker_batch",
-    "status": "status",
     "market_trades": "market_trades",
-    "candles": "candles",
+    # ... rest of your channels
 }
 
-#Market Data Endpoint
 WS_API_URL = "wss://advanced-trade-ws.coinbase.com"
 
 def sign_with_jwt(message, channel, products=[]):
@@ -52,23 +58,26 @@ def sign_with_jwt(message, channel, products=[]):
     message['jwt'] = token
     return message
 
+# --- The Key Change ---
 def on_message(ws, message):
-    data = json.loads(message)
-    with open("Output1.txt", "a") as f:
-        f.write(json.dumps(data) + "\n")
+    """Instead of writing to a file, we publish to RabbitMQ."""
+    try:
+        # Publish message to the queue
+        rmq_channel.basic_publish(
+            exchange='',
+            routing_key='coinbase_stream',
+            body=message, # 'message' is already a JSON string from Coinbase
+            properties=pika.BasicProperties(
+                delivery_mode=2,  # make message persistent on disk
+            )
+        )
+        logger.debug("Message buffered to RabbitMQ")
+    except Exception as e:
+        logger.error(f"Failed to publish to RabbitMQ: {e}")
 
 def subscribe_to_products(ws, products, channel_name):
     message = {
         "type": "subscribe",
-        "channel": channel_name,
-        "product_ids": products
-    }
-    signed_message = sign_with_jwt(message, channel_name, products)
-    ws.send(json.dumps(signed_message))
-
-def unsubscribe_to_products(ws, products, channel_name):
-    message = {
-        "type": "unsubscribe",
         "channel": channel_name,
         "product_ids": products
     }
@@ -84,24 +93,15 @@ def start_websocket():
     ws.run_forever()
 
 def main():
-    ws_thread = threading.Thread(target=start_websocket)
+    ws_thread = threading.Thread(target=start_websocket, daemon=True)
     ws_thread.start()
-
-    sent_unsub = False
-    start_time = time.time()
 
     try:
         while True:
-            if (time.time() - start_time) > 5 and not sent_unsub:
-                # Unsubscribe after 5 seconds
-                ws = websocket.create_connection(WS_API_URL)
-                unsubscribe_to_products(ws, ["BTC-USD"], CHANNEL_NAMES["level2"])
-                ws.close()
-                sent_unsub = True
             time.sleep(1)
-    except Exception as e:
-        logger.error(f"Exception: {e}")
-        raise e
+    except KeyboardInterrupt:
+        logger.info("Closing connections...")
+        rmq_conn.close()
 
 if __name__ == "__main__":
     main()
