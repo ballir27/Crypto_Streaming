@@ -1,0 +1,9 @@
+
+version: 2
+
+sources:
+  - name: project_4
+    schema: raw
+    tables:
+      - name: coinbase_raw
+        description: "Raw data ingested from Coinbase WebSocket stream"

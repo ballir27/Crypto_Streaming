@@ -27,8 +27,9 @@ def get_db_connection():
     conn = psycopg2.connect(**DB_CONFIG)
     # Ensure your table exists and has a JSONB column for the raw data
     with conn.cursor() as cur:
+        cur.execute("CREATE SCHEMA IF NOT EXISTS raw;")
         cur.execute("""
-            CREATE TABLE IF NOT EXISTS coinbase_raw (
+            CREATE TABLE IF NOT EXISTS raw.coinbase_raw (
                 id SERIAL PRIMARY KEY,
                 data JSONB,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -51,7 +52,7 @@ def process_batch(ch, method):
             data_to_insert = [(json.dumps(m),) for m in msg_batch]
             extras.execute_values(
                 cur,
-                "INSERT INTO coinbase_raw (data) VALUES %s",
+                "INSERT INTO raw.coinbase_raw (data) VALUES %s",
                 data_to_insert
             )
             db_conn.commit()
