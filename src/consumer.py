@@ -72,17 +72,18 @@ def callback(ch, method, properties, body):
         process_batch(ch, method)
 
 # --- RabbitMQ Setup ---
-connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
-channel = connection.channel()
-channel.queue_declare(queue='coinbase_stream', durable=True)
+def mq_start():
+    connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+    channel = connection.channel()
+    channel.queue_declare(queue='coinbase_stream', durable=True)
 
-# Don't dispatch more than BATCH_SIZE to this worker at a time
-channel.basic_qos(prefetch_count=BATCH_SIZE)
-channel.basic_consume(queue='coinbase_stream', on_message_callback=callback)
+    # Don't dispatch more than BATCH_SIZE to this worker at a time
+    channel.basic_qos(prefetch_count=BATCH_SIZE)
+    channel.basic_consume(queue='coinbase_stream', on_message_callback=callback)
 
-logger.info("Worker started. Waiting for messages...")
-try:
-    channel.start_consuming()
-except KeyboardInterrupt:
-    channel.stop_consuming()
-    db_conn.close()
+    logger.info("Worker started. Waiting for messages...")
+    try:
+        channel.start_consuming()
+    except KeyboardInterrupt:
+        channel.stop_consuming()
+        db_conn.close()

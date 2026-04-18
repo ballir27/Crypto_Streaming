@@ -11,6 +11,8 @@ import websocket
 from dotenv import dotenv_values
 from loguru import logger
 
+import consumer
+
 # --- Configuration & Auth Setup ---
 PROJECT_ROOT = Path(__file__).resolve().parent
 config = dotenv_values(os.path.join(PROJECT_ROOT, "../.env"))
@@ -95,6 +97,8 @@ def start_websocket():
 def main():
     ws_thread = threading.Thread(target=start_websocket, daemon=True)
     ws_thread.start()
+
+    consumer.mq_start()  # Start the consumer to process messages from RabbitMQ
 
     try:
         while True:
