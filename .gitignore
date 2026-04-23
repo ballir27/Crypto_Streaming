@@ -14,9 +14,11 @@ logs/
 *.log
 
 data/
+*.txt
 *.csv
 *.json
 *.xlsx
 *.parquet
 *.db
-*.txt
+*.duckdb
+*.ducklake

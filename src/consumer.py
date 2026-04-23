@@ -6,7 +6,8 @@ import pika
 import psycopg2
 from dotenv import dotenv_values
 from loguru import logger
-from psycopg2 import extras
+
+# from psycopg2 import extras
 
 # --- Configuration & Auth Setup ---
 PROJECT_ROOT = Path(__file__).resolve().parent
@@ -24,9 +25,9 @@ msg_batch = []
 
 # --- Database Setup ---
 def get_db_connection():
-    conn = psycopg2.connect(**DB_CONFIG)
+    pg_conn = psycopg2.connect(**DB_CONFIG)
     # Ensure your table exists and has a JSONB column for the raw data
-    with conn.cursor() as cur:
+    with pg_conn.cursor() as cur:
         cur.execute("CREATE SCHEMA IF NOT EXISTS raw;")
         cur.execute("""
             CREATE TABLE IF NOT EXISTS raw.coinbase_raw (
@@ -35,8 +36,8 @@ def get_db_connection():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         """)
-        conn.commit()
-    return conn
+        pg_conn.commit()
+    return pg_conn
 
 db_conn = get_db_connection()
 
@@ -50,7 +51,7 @@ def process_batch(ch, method):
             # Efficient bulk insert using psycopg2's execute_values
             # We wrap the dicts in json.dumps to store as JSONB
             data_to_insert = [(json.dumps(m),) for m in msg_batch]
-            extras.execute_values(
+            psycopg2.extras.execute_values(
                 cur,
                 "INSERT INTO raw.coinbase_raw (data) VALUES %s",
                 data_to_insert
