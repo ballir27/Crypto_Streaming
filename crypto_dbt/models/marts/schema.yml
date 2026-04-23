@@ -1,0 +1,5 @@
+version: 2
+
+models:
+  - name: fct_btc
+    description: "Fact table for bitcoin transactions"

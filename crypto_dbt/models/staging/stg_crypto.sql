@@ -23,15 +23,3 @@ SELECT
     (update_item->>'event_time')::timestamp as event_time,
     created_at::timestamp as time_ingested
 from flattened_updates
-
-
-
-        -- CAST(NULLIF(TRIM("Total_Population"), '') AS BIGINT) AS Total_Population,
-
-        -- -- Age Groups (Converted to BigInt)
-        -- CAST(NULLIF(TRIM("Under_5_Population"), '') AS BIGINT) AS Pop_Under_5,
-
-        -- -- Geography (Kept as Strings/Ints depending on use)
-        -- TRY_CAST(NULLIF(TRIM("state"), '') AS INT) AS State_Code,
-        -- TRY_CAST(NULLIF(TRIM("county"), '') AS INT) AS County_Code,
-        -- TRY_CAST(NULLIF(TRIM("fips_code"), '') AS INT) AS FIPS_Code
