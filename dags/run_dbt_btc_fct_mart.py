@@ -9,7 +9,8 @@ def run_fct_btc_mart():
     run_dbt_airflow.run_dbt(model_selected="+fct_btc")
 
 @dag(
-    schedule="@daily",
+    # Changed from "@daily" to a 5-minute cron interval
+    schedule="*/5 * * * *",
     start_date=pendulum.datetime(2025, 1, 1, tz="UTC"),
     catchup=False,
 )
