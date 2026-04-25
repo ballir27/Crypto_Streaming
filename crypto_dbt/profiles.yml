@@ -1,0 +1,12 @@
+crypto_dbt:
+  outputs:
+    dev:
+      dbname: project_4
+      host: postgres_db
+      pass: mypassword
+      port: 5432
+      schema: raw
+      threads: 1
+      type: postgres
+      user: myuser
+  target: dev

@@ -1,0 +1,24 @@
+FROM eclipse-temurin:21-jre-jammy
+
+ARG METABASE_VERSION=0.57.3
+
+# OS deps DuckDB needs (glibc world)
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+      libstdc++6 ca-certificates curl unzip \
+ && rm -rf /var/lib/apt/lists/*
+
+# Metabase app dir
+WORKDIR /app
+
+# Download Metabase jar
+RUN curl -fsSL \
+    "https://downloads.metabase.com/v${METABASE_VERSION}/metabase.jar" \
+    -o metabase.jar
+
+# Plugins dir (Metabase will scan it)
+RUN mkdir -p /plugins /data
+
+EXPOSE 3000
+
+ENTRYPOINT ["java","-jar","/app/metabase.jar"]

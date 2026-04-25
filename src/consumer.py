@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pika
 import psycopg2
+import psycopg2.extras
 from dotenv import dotenv_values
 from loguru import logger
 

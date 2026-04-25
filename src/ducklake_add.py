@@ -7,7 +7,7 @@ from loguru import logger
 
 CATALOG = "data/crypto_catalog.ducklake"
 DATA_PATH = "data"
-
+# def marts_from_postgres():
 # 1. Connect to DuckDB and set up environment
 con = duckdb.connect()
 con.execute("INSTALL postgres; LOAD postgres;")

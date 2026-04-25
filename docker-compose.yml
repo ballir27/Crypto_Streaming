@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # RabbitMQ service with Management UI
   rabbitmq:
@@ -33,6 +31,48 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  # Airflow service
+  airflow:
+    build: .
+    command: standalone
+    ports:
+      - "8080:8080"
+    env_file: .env
+    environment:
+      - AIRFLOW__CORE__LOAD_EXAMPLES=false
+      - PYTHONPATH=/opt/airflow/workspace/src
+      - DB_PATH=/opt/airflow/workspace/data/crypto_catalog.ducklake
+    volumes:
+      - .:/opt/airflow/workspace
+      - ./dags:/opt/airflow/dags
+      - ./data:/opt/airflow/data
+      - ./logs:/opt/airflow/logs
+      - ~/.aws:/home/airflow/.aws
+      - ./crypto_dbt:/opt/airflow/dags/crypto_dbt
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/api/v2/version"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  metabase:
+    build:
+      context: .
+      dockerfile: dockerfile.metabase
+    ports:
+      - "3000:3000"
+    environment:
+      # Directs Metabase to look for drivers in the mounted folder
+      - MB_PLUGINS_DIR=/plugins
+    volumes:
+      # Mount the driver JAR file
+      - ./plugins:/plugins
+      # Mount your DuckLake data folder
+      - ./data:/data
+    restart: always
+
 volumes:
   rabbitmq_data:
   postgres_data:
+  metabase_pgdata:
